@@ -13,7 +13,7 @@ export interface IEventInstance extends Sequelize.Instance<IEventAttributes>, IE
 
 export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes): Sequelize.Model<IEventInstance, IEventAttributes> => {
   const Event = sequelize.define<IEventInstance, IEventAttributes>('Event', {
-    timestamp: { type: DataTypes.INTEGER, allowNull: false },
+    timestamp: { type: DataTypes.BIGINT, allowNull: false },
     userId: { type: DataTypes.INTEGER, allowNull: false },
     type: {
       type: DataTypes.ENUM,

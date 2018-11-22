@@ -20,8 +20,8 @@ impressions,{number_of_impressions}
 
 **/
 
-const port = 4040;
 const app = express();
+const port = 4040;
 
 const msInAnHour = 60 * 60 * 1000; // milliseconds in an hour
 
@@ -36,7 +36,7 @@ app.get('/analytics', (req, res) => {
 
   if (isNaN(tsDate)) { return res.status(500).json([]) }
 
-  const hourBeforeTimestamp = new Date(Math.floor(tsDate / msInAnHour ) * msInAnHour).getTime();
+  const hourBeforeTimestamp = new Date(Math.floor(tsDate / msInAnHour) * msInAnHour).getTime();
 
   const whereCond = `WHERE timestamp > ${hourBeforeTimestamp} AND timestamp < ${hourBeforeTimestamp + msInAnHour}`
   const userCountQuery = `SELECT count(distinct("userId")) FROM "Events" ${whereCond}`
@@ -47,14 +47,14 @@ app.get('/analytics', (req, res) => {
     .then(userCountRes =>
       sequelize.query(typeCountQuery, { type: sequelize.QueryTypes.SELECT })
         .then((typeCountsRes: ITypeCountRes[]) => {
-          const clicksRow = typeCountsRes.find(r => r.type == "click")
-          const impressionsRow = typeCountsRes.find(r => r.type == "impression")
+          const clicksRow = typeCountsRes.find(r => r.type == "click");
+          const impressionsRow = typeCountsRes.find(r => r.type == "impression");
 
           res.status(200).json({
             unique_users: userCountRes[0].count,
             clicks: clicksRow ? clicksRow.count : 0,
             impressions: impressionsRow ? impressionsRow.count : 0
-          })
+          });
         })
     ).catch(err => res.status(500).json({ err: ['oops', err] }));
 });
@@ -62,14 +62,14 @@ app.get('/analytics', (req, res) => {
 app.post('/analytics', (req, res) => {
   const { timestamp, user, event } = req.query;
   const e = db.Event.create({
-    timestamp,
+    timestamp: timestamp || new Date().getTime(),
     userId: user,
     type: event
   }).catch(e => console.log(`failed to persiste with error ${e}`))
 
-  res.status(204).send('Event logged.')
+  res.status(204).send('Event logged.');
 });
 
-db.sequelize.sync().then(() => {
+db.sequelize.sync({ force: true }).then(() => {
   app.listen(port, () => console.log(`Analytics server listening on port ${port}!`));
 });
