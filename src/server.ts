@@ -1,5 +1,5 @@
 import express from 'express';
-import db from './models';
+import { db, sequelize } from './models';
 
 import { IEventInstance } from "./models/event";
 
@@ -25,29 +25,38 @@ const app = express();
 
 const msInAnHour = 60 * 60 * 1000; // milliseconds in an hour
 
+interface ITypeCountRes {
+  type: string;
+  count: number;
+}
+
 app.get('/analytics', (req, res) => {
   const { timestamp } = req.query;
   const tsDate = new Date(parseInt(timestamp)).getTime();
 
-  if (isNaN(tsDate)) {
-    return res.status(500).json([])
-  }
+  if (isNaN(tsDate)) { return res.status(500).json([]) }
 
   const hourBeforeTimestamp = new Date(Math.floor(tsDate / msInAnHour ) * msInAnHour).getTime();
-  console.log("timetsamp ==", timestamp)
-  console.log("ts date ==", tsDate)
-  console.log("hours before ts==", hourBeforeTimestamp)
 
-  db.Event.findAll({
-      where: {
-        timestamp: {
-          $gte: hourBeforeTimestamp,
-          $lte: hourBeforeTimestamp + msInAnHour
-        }
-      }
-    })
-    .then((events: IEventInstance[]) => res.status(200).json({ events }))
-    .catch(err => res.status(500).json({ err: ['oops', err] }));
+  const whereCond = `WHERE timestamp > ${hourBeforeTimestamp} AND timestamp < ${hourBeforeTimestamp + msInAnHour}`
+  const userCountQuery = `SELECT count(distinct("userId")) FROM "Events" ${whereCond}`
+  const typeCountQuery = `SELECT type, count(*) FROM "Events" ${whereCond} GROUP BY type`
+
+  sequelize
+    .query(userCountQuery, { type: sequelize.QueryTypes.SELECT })
+    .then(userCountRes =>
+      sequelize.query(typeCountQuery, { type: sequelize.QueryTypes.SELECT })
+        .then((typeCountsRes: ITypeCountRes[]) => {
+          const clicksRow = typeCountsRes.find(r => r.type == "click")
+          const impressionsRow = typeCountsRes.find(r => r.type == "impression")
+
+          res.status(200).json({
+            unique_users: userCountRes[0].count,
+            clicks: clicksRow ? clicksRow.count : 0,
+            impressions: impressionsRow ? impressionsRow.count : 0
+          })
+        })
+    ).catch(err => res.status(500).json({ err: ['oops', err] }));
 });
 
 app.post('/analytics', (req, res) => {
@@ -55,11 +64,12 @@ app.post('/analytics', (req, res) => {
   const e = db.Event.create({
     timestamp,
     userId: user,
-    type: event }).catch(e => console.log(`failed to persiste with error ${e}`))
+    type: event
+  }).catch(e => console.log(`failed to persiste with error ${e}`))
 
   res.status(204).send('Event logged.')
 });
 
-db.sequelize.sync({ force: true }).then(() => {
+db.sequelize.sync().then(() => {
   app.listen(port, () => console.log(`Analytics server listening on port ${port}!`));
 });

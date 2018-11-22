@@ -9,14 +9,12 @@ interface DbInterface {
   [index:string]: any;
 };
 
-const sequelize = new Sequelize('analytics_dev', 'postgres', 'postgres', {
+export const sequelize = new Sequelize('analytics_dev', 'postgres', 'postgres', {
   dialect: 'postgres',
 });
 
-const db: DbInterface = {
+export const db: DbInterface = {
   Event: sequelize.import('./event'),
   sequelize,
   Sequelize
 };
-
-export default db;
