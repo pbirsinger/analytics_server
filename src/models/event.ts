@@ -3,7 +3,6 @@ import Sequelize from 'sequelize';
 const EventTypes = [ "click", "impression" ]
 
 export interface IEventAttributes {
-  id?: number;
   timestamp: number;
   type: string;
   userId: number;
@@ -23,6 +22,8 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes):
       validate: { isIn: { args: [EventTypes], msg: "bad event type" } }
     }
   });
+
+  Event.removeAttribute('id');
 
   return Event;
 };
