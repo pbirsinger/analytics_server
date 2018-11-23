@@ -1,7 +1,7 @@
 import express from 'express';
 import { db, sequelize } from './models';
 
-import { IEventInstance } from "./models/event";
+import { getHourCounts, IEventInstance } from "./models/event";
 
 /**
 
@@ -23,40 +23,19 @@ impressions,{number_of_impressions}
 const app = express();
 const port = 4040;
 
-const msInAnHour = 60 * 60 * 1000; // milliseconds in an hour
-
-interface ITypeCountRes {
-  type: string;
-  count: number;
-}
-
 app.get('/analytics', (req, res) => {
-  const { timestamp } = req.query;
-  const tsDate = new Date(parseInt(timestamp)).getTime();
+  const parsedTimeStamp = parseInt(req.query.timestamp)
 
-  if (isNaN(tsDate)) { return res.status(500).json([]) }
+  if (isNaN(parsedTimeStamp)) {
+    console.log(`parsedTimeStamp ==${parsedTimeStamp}`)
+    return res.status(500).json({ err: "bad timestamp"})
+  }
 
-  const hourBeforeTimestamp = new Date(Math.floor(tsDate / msInAnHour) * msInAnHour).getTime();
-
-  const whereCond = `WHERE timestamp > ${hourBeforeTimestamp} AND timestamp < ${hourBeforeTimestamp + msInAnHour}`
-  const userCountQuery = `SELECT count(distinct("userId")) FROM "Events" ${whereCond}`
-  const typeCountQuery = `SELECT type, count(*) FROM "Events" ${whereCond} GROUP BY type`
-
-  sequelize
-    .query(userCountQuery, { type: sequelize.QueryTypes.SELECT })
-    .then(userCountRes =>
-      sequelize.query(typeCountQuery, { type: sequelize.QueryTypes.SELECT })
-        .then((typeCountsRes: ITypeCountRes[]) => {
-          const clicksRow = typeCountsRes.find(r => r.type == "click");
-          const impressionsRow = typeCountsRes.find(r => r.type == "impression");
-
-          res.status(200).json({
-            unique_users: userCountRes[0].count,
-            clicks: clicksRow ? clicksRow.count : 0,
-            impressions: impressionsRow ? impressionsRow.count : 0
-          });
-        })
-    ).catch(err => res.status(500).json({ err: ['oops', err] }));
+  getHourCounts(
+    parsedTimeStamp,
+    out => res.status(200).json(out),
+    err => res.status(500).json({ err })
+  )
 });
 
 app.post('/analytics', (req, res) => {
@@ -70,6 +49,6 @@ app.post('/analytics', (req, res) => {
   res.status(204).send('Event logged.');
 });
 
-db.sequelize.sync({ force: true }).then(() => {
+db.sequelize.sync().then(() => {
   app.listen(port, () => console.log(`Analytics server listening on port ${port}!`));
 });
