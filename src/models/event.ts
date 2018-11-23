@@ -3,7 +3,7 @@ import Sequelize from 'sequelize';
 import { IEventHourSummaryAttributes } from './event_hour_summary';
 import { sequelize } from './index';
 
-const EventTypes = [ "click", "impression" ]
+const EventTypes = [ "click", "impression" ];
 
 export interface IEventAttributes {
   timestamp: number;
@@ -17,7 +17,7 @@ export interface IEventInstance extends Sequelize.Instance<IEventAttributes>, IE
 interface ITypeCountRes {
   type: string;
   count: number;
-}
+};
 
 const msInAnHour = 60 * 60 * 1000; // milliseconds in an hour
 
@@ -30,9 +30,9 @@ export const getHourCounts = (
 ) => {
   const hourBeforeTimestamp = roundToEarlierHour(timestamp);
 
-  const whereCond = `WHERE timestamp > ${hourBeforeTimestamp} AND timestamp < ${hourBeforeTimestamp + msInAnHour}`
-  const userCountQuery = `SELECT count(distinct("userId")) FROM "Events" ${whereCond}`
-  const typeCountQuery = `SELECT type, count(*) FROM "Events" ${whereCond} GROUP BY type`
+  const whereCond = `WHERE timestamp > ${hourBeforeTimestamp} AND timestamp < ${hourBeforeTimestamp + msInAnHour}`;
+  const userCountQuery = `SELECT count(distinct("userId")) FROM "Events" ${whereCond}`;
+  const typeCountQuery = `SELECT type, count(*) FROM "Events" ${whereCond} GROUP BY type`;
 
   sequelize
     .query(userCountQuery, { type: sequelize.QueryTypes.SELECT })
