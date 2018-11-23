@@ -1,5 +1,6 @@
 import Sequelize from 'sequelize';
 
+import { IEventHourSummaryAttributes } from './event_hour_summary';
 import { sequelize } from './index';
 
 const EventTypes = [ "click", "impression" ]
@@ -13,12 +14,6 @@ export interface IEventAttributes {
 export interface IEventInstance extends Sequelize.Instance<IEventAttributes>, IEventAttributes {
 };
 
-export interface IEventHourSummary {
-  unique_users: number;
-  clicks: number;
-  impressions: number;
-};
-
 interface ITypeCountRes {
   type: string;
   count: number;
@@ -26,19 +21,18 @@ interface ITypeCountRes {
 
 const msInAnHour = 60 * 60 * 1000; // milliseconds in an hour
 
+export const roundToEarlierHour = (ts: number) => new Date(Math.floor(ts / msInAnHour) * msInAnHour).getTime();
+
 export const getHourCounts = (
   timestamp: number,
-  onSuccess: (sum: IEventHourSummary) => void,
+  onSuccess: (sum: IEventHourSummaryAttributes) => void,
   onError: (error: string) => void
 ) => {
-  const hourBeforeTimestamp = new Date(Math.floor(timestamp / msInAnHour) * msInAnHour).getTime();
+  const hourBeforeTimestamp = roundToEarlierHour(timestamp);
 
   const whereCond = `WHERE timestamp > ${hourBeforeTimestamp} AND timestamp < ${hourBeforeTimestamp + msInAnHour}`
   const userCountQuery = `SELECT count(distinct("userId")) FROM "Events" ${whereCond}`
   const typeCountQuery = `SELECT type, count(*) FROM "Events" ${whereCond} GROUP BY type`
-
-  console.log(`userCountQuery == ${userCountQuery}`)
-  console.log(`typeCountQuery == ${typeCountQuery}`)
 
   sequelize
     .query(userCountQuery, { type: sequelize.QueryTypes.SELECT })
@@ -47,12 +41,12 @@ export const getHourCounts = (
         .then((typeCountsRes: ITypeCountRes[]) => {
           const clicksRow = typeCountsRes.find(r => r.type == "click");
           const impressionsRow = typeCountsRes.find(r => r.type == "impression");
-          console.log("in typessssssssss")
 
           onSuccess({
-            unique_users: userCountRes[0].count,
-            clicks: clicksRow ? clicksRow.count : 0,
-            impressions: impressionsRow ? impressionsRow.count : 0
+            hourTimestamp: hourBeforeTimestamp,
+            numUniqueUsers: userCountRes[0].count,
+            numClicks: clicksRow ? clicksRow.count : 0,
+            numImpressions: impressionsRow ? impressionsRow.count : 0
           });
         })
     ).catch(onError)
