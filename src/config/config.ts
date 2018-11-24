@@ -1,13 +1,13 @@
 export default ({
   dbName: 'analytics_dev',
-  username: 'postgres',
-  password: 'postgres',
   dbOpts: {
     dialect: 'postgres',
     pool: {
+      idle: 10000,
       max: 95,
       min: 0,
-      idle: 10000
     },
-  }
+  },
+  password: 'postgres',
+  username: 'postgres',
 });

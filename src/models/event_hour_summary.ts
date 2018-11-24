@@ -8,20 +8,18 @@ export interface IEventHourSummaryAttributes {
   numClicks: number;
   numImpressions: number;
   numUniqueUsers: number;
-};
+}
 
-export interface IEventHourSummaryInstance extends Sequelize.Instance<IEventHourSummaryAttributes>, IEventHourSummaryAttributes {
-};
+export interface IEventHourSummaryInstance extends
+  Sequelize.Instance<IEventHourSummaryAttributes>, IEventHourSummaryAttributes {}
 
 export const getOrUpdateHourSummary = async (
   ts: number,
   onSuccess: (sum: IEventHourSummaryAttributes) => void,
-  onError: (e: string) => void
+  onError: (e: string) => void,
 ) => {
-  const hourBeforeTimestamp = roundToEarlierHour(ts);
-  const hourSummary = await db.EventHourSummary.findOne({
-    where: { hourTimestamp: hourBeforeTimestamp }
-  });
+  const hourTimestamp = roundToEarlierHour(ts);
+  const hourSummary = await db.EventHourSummary.findOne({ where: { hourTimestamp }});
 
   hourSummary ? onSuccess(hourSummary) : updateHourSummaryTable(ts, onSuccess, onError);
 };
@@ -29,24 +27,27 @@ export const getOrUpdateHourSummary = async (
 export const updateHourSummaryTable = (
   ts: number,
   onSuccess?: (sum: IEventHourSummaryAttributes) => void,
-  onError?: (e: string) => void
+  onError?: (e: string) => void,
 ) => getHourCounts(
     ts,
     counts => {
       db.EventHourSummary.upsert(counts);
-      if (onSuccess) onSuccess(counts);
+      if (onSuccess) { onSuccess(counts); }
     },
-    e => onError && onError(e)
+    e => onError && onError(e),
   );
-;
 
-export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes): Sequelize.Model<IEventHourSummaryInstance, IEventHourSummaryAttributes> => {
-  const EventHourSummary = sequelize.define<IEventHourSummaryInstance, IEventHourSummaryAttributes>('EventHourSummary', {
-    hourTimestamp: { type: DataTypes.BIGINT, allowNull: false, primaryKey: true },
-    numClicks: { type: DataTypes.INTEGER, allowNull: false },
-    numImpressions: { type: DataTypes.INTEGER, allowNull: false },
-    numUniqueUsers: { type: DataTypes.INTEGER, allowNull: false },
-  });
+export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes):
+  Sequelize.Model<IEventHourSummaryInstance, IEventHourSummaryAttributes> => {
+  const EventHourSummary = sequelize.define<IEventHourSummaryInstance, IEventHourSummaryAttributes>(
+    'EventHourSummary',
+    {
+      hourTimestamp: { type: DataTypes.BIGINT, allowNull: false, primaryKey: true },
+      numClicks: { type: DataTypes.INTEGER, allowNull: false },
+      numImpressions: { type: DataTypes.INTEGER, allowNull: false },
+      numUniqueUsers: { type: DataTypes.INTEGER, allowNull: false },
+    },
+  );
 
   EventHourSummary.removeAttribute('id');
 
