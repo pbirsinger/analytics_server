@@ -13,6 +13,7 @@ import {
 const app = express();
 const port = 4040;
 
+// BUG: want to throttle every individual hour, not whole table
 const throttledUpdatedHourSummary = _.throttle(updateHourSummaryTable, 1000);
 
 app.get('/analytics', (req, res) => {
@@ -33,6 +34,7 @@ app.get('/analytics', (req, res) => {
 });
 
 app.post('/analytics', (req, res) => {
+  // in practice would probably want to validate event beforehand
   res.status(204).send('Event received.');
 
   const { timestamp, user, event } = req.query;

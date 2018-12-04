@@ -30,10 +30,13 @@ export const getHourCounts = (
 ) => {
   const hourBeforeTimestamp = roundToEarlierHour(timestamp);
 
+  // should replace hour summary with a materialzed view
+  // see https://medium.com/jobteaser-dev-team/materialized-views-with-postgresql-for-beginners-9809483db35f
   const whereCond = `WHERE timestamp > ${hourBeforeTimestamp} AND timestamp < ${hourBeforeTimestamp + msInAnHour}`;
   const userCountQuery = `SELECT count(distinct("userId")) FROM "Events" ${whereCond}`;
   const typeCountQuery = `SELECT type, count(*) FROM "Events" ${whereCond} GROUP BY type`;
 
+  // use Promise.all
   sequelize
     .query(userCountQuery, { type: sequelize.QueryTypes.SELECT })
     .then(userCountRes => {

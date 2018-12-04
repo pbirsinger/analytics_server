@@ -21,6 +21,7 @@ export const getOrUpdateHourSummary = async (
   const hourTimestamp = roundToEarlierHour(ts);
   const hourSummary = await db.EventHourSummary.findOne({ where: { hourTimestamp }});
 
+  // uses promises here instead
   hourSummary ? onSuccess(hourSummary) : updateHourSummaryTable(ts, onSuccess, onError);
 };
 
